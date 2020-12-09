@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+	<meta name="description" content="Discover the realm of Paisti and gain experience on real Lysti.">
+	<meta name="keywords" content="Paisti, Lysti, Möyssi">
+	<meta name="author" content="tampasto">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kingdom of Paisti</title>
+    <script src="js/init.js"></script>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <noscript>
+		<h1>No Lysti this time!</h1>
+        <p>JavaScript is turned off. Please turn it on and try again.</p>
+    </noscript>
+    <div id="startForm">
+        <table>
+            <tr>
+                <td><span class="lan_start_select_language"></span>:</td>
+                <td id="availableLanguages"></td>
+            </tr>
+            <tr>
+                <td><span class="lan_start_music_sounds"></span>:</td>
+                <td>
+                    <label for="music_sounds_on"><input type="radio" name="music_sounds" id="music_sounds_on" checked>&nbsp;<span class="lan_start_music_sounds_on"></span></label><br>
+                    <label for="music_sounds_off"><input type="radio" name="music_sounds" id="music_sounds_off">&nbsp;<span class="lan_start_music_sounds_off"></span></label>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2"><button id="startGameButton" class="lan_start_text"></button></td>
+            </tr>
+        </table>
+    </div>
+    <canvas id="paistiCanvas"></canvas>
+</body>
+</html>
