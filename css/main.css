@@ -41,6 +41,10 @@ noscript {
     height: 100%;
 }
 
+.clickable {
+    cursor: pointer;
+}
+
 @font-face {
     font-family: Cinzel Decorative;
     font-weight: normal;

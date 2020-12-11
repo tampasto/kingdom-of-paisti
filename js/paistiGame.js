@@ -6,17 +6,22 @@ let paistiGame = (() => { // 🍖
     const mainIntervalMs = 0; // Debugging, other than zero will slow the main loop to this millisecond value
     const infoValueColWidthVh = 30; // Width of info box value column
     const fontSizeInfoBoxVh = 3;
+    const fontSizePauseVh = 7;
 
     exports.room = null; // Reference to the current PaistiRoom object
     exports.screenObjectList = []; // Drawing list for screen objects, first objects are in background, last objects in foreground
     exports.screenObject = {}; // ID access object for screen objects
     exports.soundsOn = null;
+    exports.partyPoints = null;
+    exports.partyPointsMax = null;
+    exports.eatPartyPointsAt = null;
     
     let preloadedRoom = null; // Reference to the already loaded PaistiRoom object
     let isDrawingInfo = false; // The green specs in top right corner, togglable via Ctrl key
     let infoCaptions, fpsTimes, frameNo; // Private variables related to info box
     let stopped = false; // Has the user paused the game?
     let cssWidthPx, cssHeightPx, pixelRatio, pixelRatioMediaQuery; // Canvas size in virtual pixels and conversion to actual pixels
+    let mouseX, mouseY, wasHovering = false, onclickFunc, onclickObjID;
     
     let px = exports.px = pixels => Math.round(pixelRatio * pixels); // Converts css pixels to real pixels on sceen
     let vh = exports.vh = vhPc => cssHeightPx * vhPc / 100; // Converts vh unit (viewport height) to pixels
@@ -24,7 +29,10 @@ let paistiGame = (() => { // 🍖
 
     exports.init = (soundOn) => {
         exports.soundsOn = soundOn;
-        if (exports.soundsOn) pAudio.playLoadedTrack();
+        if (exports.soundsOn) {
+            pAudio.playLoadedTrack();
+            pAudio.takeNewSoundsToUse();
+        }
 
         pixelRatio = window.devicePixelRatio || 1;
         pixelRatioMediaQuery = window.matchMedia(`(resolution: ${pixelRatio}dppx)`);
@@ -78,12 +86,38 @@ let paistiGame = (() => { // 🍖
         }
 
         exports.room.drawBackground(recalculate, pfNow);
-        exports.screenObjectList.forEach(sObj => sObj.draw(recalculate, pfNow));
+        onclickFunc = null;
+        exports.screenObjectList.forEach(sObj => {
+            let maybeFunc = sObj.draw(recalculate, pfNow, mouseX, mouseY);
+            if (!onclickFunc) {
+                onclickFunc = maybeFunc;
+                onclickObjID = sObj.id;
+            }
+        });
+        //paistiLog(typeof onclickFunc === 'function');
+        if (wasHovering === !onclickFunc) {
+            paistiCanvas.className = !onclickFunc ? '' : 'clickable';
+        }
+        wasHovering = !!onclickFunc;
 
         if (isDrawingInfo) drawInfo(pfNow);
+        
+        if (exports.eatPartyPointsAt) {
+            if (performance.now() > exports.eatPartyPointsAt) {
+                exports.partyPoints--;
+                if (exports.partyPoints === -1) exports.partyPoints = 0;
+                exports.eatPartyPointsAt = performance.now() + exports.room.partyPointEatIntervalMs;
+            }
+        }
 
         frameNo++;
-        if (!stopped) {
+        if (stopped) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, paistiCanvas.width, paistiCanvas.height);
+            exports.screenObject['status_stopped'].visible = true;
+            exports.screenObject['status_stopped'].draw(recalculate, pfNow, mouseX, mouseY);
+        }
+        else {
             if (!mainIntervalMs) {
                 requestAnimationFrame(main);
             }
@@ -139,7 +173,10 @@ let paistiGame = (() => { // 🍖
             preloadedRoom = new PaistiRoom(roomName);
             loadPromises = [];
             loadPromises.push(pTranslations.loadRoomAsync(lang, roomName));
-            if (exports.soundsOn) loadPromises.push(pAudio.loadTrackAsync(rooms[roomName].trackURL));
+            if (exports.soundsOn) {
+                loadPromises.push(pAudio.loadTrackAsync(rooms[roomName].trackURL));
+                loadPromises.push(pAudio.loadSoundsAsync(roomName));
+            }
             Promise.all(loadPromises).then(resolve, reject);
         });
     };
@@ -149,7 +186,10 @@ let paistiGame = (() => { // 🍖
         exports.room = preloadedRoom;
         preloadedRoom = null;
         exports.room.initRoom();
-        if (exports.soundsOn) pAudio.playLoadedTrack();
+        if (exports.soundsOn) {
+            pAudio.playLoadedTrack();
+            pAudio.takeNewSoundsToUse();
+        }
     }
 
     exports.keydown = ev => {
@@ -163,13 +203,17 @@ let paistiGame = (() => { // 🍖
                 stopped = !stopped; // Toggle stopped state
                 if (stopped) {
                     addScreenObject('status_stopped', {
+                        visible: false,
                         text: pTranslations.getTranslation('game_stopped'),
                         color: '#0F0',
-                        font: `${px(fontSizeCaptionWh)}px Nova Slim`,
+                        fontSize: `${px(vh(fontSizePauseVh))}px`,
+                        fontFamily: 'Nova Slim',
                     });
+                    exports.room.pauseRoom();
                 }
                 else {
                     removeScreenObject('status_stopped');
+                    exports.room.resumeRoom();
                     requestAnimationFrame(main);
                 }
                 break;
@@ -183,6 +227,19 @@ let paistiGame = (() => { // 🍖
                 break;
         }
         //paistiLog(`ev.key = "${ev.key}"`);
+    };
+
+    exports.mousemove = ev => {
+        mouseX = px(ev.offsetX);
+        mouseY = px(ev.offsetY);
+    };
+
+    exports.click = ev => {
+        if (onclickFunc) onclickFunc(onclickObjID);
+    }
+
+    exports.visibilitychange = ev => {
+        exports.room.visibilityChanged();
     };
 
     return exports;

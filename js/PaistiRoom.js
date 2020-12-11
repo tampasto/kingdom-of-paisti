@@ -5,6 +5,8 @@ class PaistiRoom { // 🖼️
     gradient = null;
     gradientX = null;
     gradientY = null;
+    pausedTS = null;
+    finished = false;
 
     // Paisti rain
     paistiCount = 0; // Counter for paisti IDs
@@ -12,6 +14,7 @@ class PaistiRoom { // 🖼️
 
     constructor(roomName) {
         this.name = roomName;
+        this.partyPointEatIntervalMs = rooms[this.name].partyPointEatIntervalMs;
         if (!rooms[this.name]) {
             paistiLog(`The room "${this.name}" has not been defined basic settings in rooms.js.`, loadTS, 'warn');
         }
@@ -65,12 +68,17 @@ class PaistiRoom { // 🖼️
         if (this.name === 'paistiRain') {
             this.paistiCount = 0;
             this.dropNewPaisti(this);
+            paistiGame.partyPoints = 0;
+            paistiGame.partyPointsMax = 100;
+            paistiGame.eatPartyPointsAt = performance.now() + this.partyPointEatIntervalMs;
         }
     }
 
     exitRoom() {
         if (this.name === 'paistiRain') clearTimeout(this.paistiTimeout);
         paistiGame.clearScreenObjects();
+        paistiGame.partyPoints = null;
+        paistiGame.partyPointsMax = null;
     }
 
     dropNewPaisti(thisArg) {
@@ -84,15 +92,67 @@ class PaistiRoom { // 🖼️
         maxMs =         rooms[thisArg.name].paistiRain.dropPaistiMaxMs;
         paistiEmojis =  rooms[thisArg.name].paistiRain.paistiEmojis;
 
-        depth = Math.round(depthMin + Math.random() * (depthMax - depthMin + 1) - 0.5)
+        depth = Math.round(depthMin + Math.random() * (depthMax - depthMin + 1) - 0.5);
         paistiGame.addScreenObject(`paisti${++thisArg.paistiCount}`, {
             text: paistiEmojis[Math.floor(Math.random() * paistiEmojis.length)],
             fontSize: ((100-depth)/100 * defaultSize) + 'vh',
             depth: depth,
             left: (Math.random() * 100).toFixed(3) + 'vw',
+            onclick: thisArg.clickPaisti,
         });
 
         timeUntilNewPaisti = minMs + Math.random() * (maxMs - minMs + 1) - 0.5;
         thisArg.paistiTimeout = setTimeout(thisArg.dropNewPaisti, Math.round(timeUntilNewPaisti), thisArg);
+    }
+
+    clickPaisti(objID) {
+        pAudio.playSound('bell_tone');
+        paistiGame.removeScreenObject(objID);
+        paistiGame.partyPoints += 5;
+        if (paistiGame.partyPoints >= paistiGame.partyPointsMax) {
+            pAudio.playSound('organ');
+            clearTimeout(paistiGame.room.paistiTimeout);
+            pAudio.stopTrack();
+            paistiGame.room.finished = true;
+            paistiGame.addScreenObject('paistitext', {
+                text: pTranslations.getTranslation('paistitext'),
+                fontFamily: 'Pirata One',
+                fontSize: '20vh',
+                floating: "5vh",
+                roundMs: 969,
+            });
+            paistiGame.removeScreenObject('partymeter');
+        }
+    }
+
+    visibilityChanged() {
+        if (document.hidden) {
+            this.pauseRoom();
+        }
+        else {
+            this.resumeRoom();
+        }
+    }
+
+    pauseRoom() {
+        this.pausedTS = performance.now();
+
+        if (this.name === 'paistiRain') {
+            clearTimeout(this.paistiTimeout);
+        }
+    }
+
+    resumeRoom() {
+        let addition;
+
+        addition = performance.now() - this.pausedTS;
+        paistiGame.screenObjectList.forEach(scrObj => {
+            scrObj.birthtime += addition;
+        });
+        this.pausedTS = null;
+
+        if (this.name === 'paistiRain' && !this.finished) {
+            this.dropNewPaisti(this);
+        }
     }
 }

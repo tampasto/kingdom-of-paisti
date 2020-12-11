@@ -7,6 +7,7 @@
 
 rooms.intro = {
     trackURL: "music/freesfx-ability-to-dance.mp3",
+    trackVolume: 0.8,
     bgType: "radialgradient",
     gradientColors: { // 0 is center, 1 is perifery
         "0": "#007",
@@ -32,6 +33,7 @@ rooms.intro = {
             text: "🍖",
             fontSize: "25vh",
             floating: "2vh",
+            roundMs: 969,
         },
         "welcome_text": {
             text: "[welcome]",
@@ -45,12 +47,18 @@ rooms.intro = {
             fontSize: "3vh",
             bottom: "12vh",
             glow: true,
+            roundMs: 1938,
         },
     },
 }
 
 rooms.paistiRain = {
     trackURL: "music/bensound-psychedelic.mp3",
+    trackVolume: 0.5,
+    sounds: {
+        "bell_tone": [3, "sounds/freesfx-bell-tone-or-idea-accent-performed-on-xylophone.mp3"],
+        "organ": [1, "sounds/freesfx-circus-organ-or-organ-grinder.mp3"],
+    },
     bgType: "radialgradient",
     gradientColors: { // 0 is center, 1 is perifery
         "0": "#007",
@@ -64,4 +72,22 @@ rooms.paistiRain = {
         dropPaistiDepthMin: 6, // Min depth for a new paisti (small number: not deep)
         dropPaistiDepthMax: 100, // Max depth
     },
+    initScreenObjects: {
+        "collect_paisti_text": {
+            text: "[collect_paisti]",
+            fontFamily: "Nova Slim",
+            fontSize: "5vh",
+            fadeOutSec: 3,
+            roundMs: 1000,
+        },
+        "partymeter": {
+            text: "[partymeter]",
+            textAlign: "right",
+            fontFamily: "Nova Slim",
+            fontSize: "3vh",
+            top: "24vh",
+            right: "3vw",
+        },
+    },
+    partyPointEatIntervalMs: 700,
 }

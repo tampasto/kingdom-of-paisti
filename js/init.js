@@ -80,6 +80,7 @@ function whenGameScriptsLoaded() {
     mediaLoadPromises = [];
     mediaLoadPromises.push(activateFonts);
     mediaLoadPromises.push(pAudio.loadTrackAsync(rooms[introRoom].trackURL));
+    mediaLoadPromises.push(pAudio.loadSoundsAsync(introRoom));
     promMedia = Promise.all(mediaLoadPromises)
         .catch(ev => paistiLog(`Could not load data files required to run the game. File "${ev.filename}". ${ev.message}`, null, 'err'));
 
@@ -125,6 +126,9 @@ function startGame() {
 
     ctx = paistiCanvas.getContext('2d');
     window.addEventListener('keydown', paistiGame.keydown);
+    window.addEventListener('mousemove', paistiGame.mousemove);
+    window.addEventListener('click', paistiGame.click);
+    document.addEventListener('visibilitychange', paistiGame.visibilitychange);
     paistiGame.init(pStartScreen ? pStartScreen.selectedSoundsOn : skipSettingsSoundsOn);
 }
 
